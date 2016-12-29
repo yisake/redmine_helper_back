@@ -77,7 +77,9 @@ def upload():
     global filepath
     filepath=[ ]
     filenames = [ ]
-    shutil.rmtree(app.config['UPLOAD_FOLDER'])
+    
+    if os.path.exists(app.config['UPLOAD_FOLDER']):
+        shutil.rmtree(app.config['UPLOAD_FOLDER'])
     os.mkdir(app.config['UPLOAD_FOLDER'])
     
     print 'Request.form'
