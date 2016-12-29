@@ -3,6 +3,7 @@ from flask import Flask,jsonify, request,Response
 from redmine import Redmine
 import json
 import os
+import shutil
 import traceback
 app=Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
@@ -73,11 +74,36 @@ def allowed_file(filename):
 
 @app.route('/upload' , methods=['GET' , 'POST' ])
 def upload():
-    print request.form
-    print request.files
-    filenames = [ ]
     global filepath
     filepath=[ ]
+    filenames = [ ]
+    shutil.rmtree(app.config['UPLOAD_FOLDER'])
+    os.mkdir(app.config['UPLOAD_FOLDER'])
+    
+    print 'Request.form'
+    #print request.form
+    print 'Request.files'
+    print request.files
+        
+    '''
+    @20161229 上传图片
+    @canvas_upload
+    '''
+    if request.form.has_key('imgBase64'):
+        import base64
+        import urllib
+        '''
+        @20161229
+        @program 需要用urllib来解码
+        '''
+        url = urllib.unquote(request.form['imgBase64'])
+        imgData = base64.b64decode(url)
+        imgFile=open(os.path.join(app.config['UPLOAD_FOLDER'],request.form['fileFileName']),'wb' )
+        imgFile.write(imgData)
+        imgFile.close()
+        filepath.append(os.path.join(app.config['UPLOAD_FOLDER'],request.form['fileFileName']))
+        print filepath
+
     #uploaded_files = request.files.getlist("file[]" )
     uploaded_files = request.files.getlist("attachment" )
     print uploaded_files
@@ -86,6 +112,7 @@ def upload():
         uploadspath=os.path.join(app.config['UPLOAD_FOLDER'],upload_file.filename)
         filepath.append(os.path.join(os.getcwd(),uploadspath))
         filenames.append(upload_file.filename)
+    print 'Filepath'
     print filepath
     return jsonify(result='y' )
 
@@ -171,31 +198,31 @@ def create_issue():
     environment=request.form.get('environment')
     try:
         redmine.issue.create(project_id=projectid, 
-subject=subject, 
-tracker_id=int(tracker_id), 
-description=description, 
-status_id=int(1), 
-priority_id=priority_id, 
-assigned_to_id=int(assigned_to_id),
-custom_fields=[{
-            "id": 1,
-            "value": severity #严重程度
-        }, {
-            "id": 3,
-            "value": reappear#是否必现
-        }, {
-            "id": 4,
-            "value": bugtype#bug类型
-        }, {
-            "id": 6,
-            "value": environment #测试环境 预发布环境
-        }],
-uploads=uploads)
-        print 'ok'
+            subject=subject, 
+            tracker_id=int(tracker_id), 
+            description=description, 
+            status_id=int(1), 
+            priority_id=priority_id, 
+            assigned_to_id=int(assigned_to_id),
+            custom_fields=[{
+                        "id": 1,
+                        "value": severity #严重程度
+                    }, {
+                        "id": 3,
+                        "value": reappear#是否必现
+                    }, {
+                        "id": 4,
+                        "value": bugtype#bug类型
+                    }, {
+                        "id": 6,
+                        "value": environment #测试环境 预发布环境
+                    }],
+            uploads=uploads)
+        print 'Status:success\n'
         return jsonify(result='success' )
     except Exception:
         traceback.print_exc()  
-        print 'fail'
+        print 'Status:fail\n'
         return jsonify(result='failed' )
 
 if __name__=='__main__':
